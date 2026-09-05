@@ -24,3 +24,6 @@ build/
 deploy/.state
 deploy/*.tar.gz
 .svelte-kit/
+# local-only secrets (never commit)
+*.local.md
+deploy/CREDENTIALS.local.md
