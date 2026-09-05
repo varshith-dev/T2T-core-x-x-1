@@ -13,6 +13,7 @@ import { walletRoutes } from "./routes/wallet.js";
 import { couponRoutes } from "./routes/coupons.js";
 import { reviewRoutes } from "./routes/review.js";
 import { adminRoutes } from "./routes/admin.js";
+import { dashboardRoutes } from "./routes/dashboards.js";
 import { seed } from "./seed.js";
 import { startWorker } from "./worker.js";
 import { pushEvent, recentEvents } from "./events.js";
@@ -57,6 +58,7 @@ await app.register(walletRoutes);
 await app.register(couponRoutes);
 await app.register(reviewRoutes);
 await app.register(adminRoutes);
+await app.register(dashboardRoutes);
 
 try {
   await seed((m) => app.log.info(m));

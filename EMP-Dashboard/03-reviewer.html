@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Reviewer Dashboard — T2T Platform</title>
+<meta name="description" content="Reviewer dashboard for T2T — human-in-the-loop submission queue, approve or reject flagged items."/>
+<link rel="stylesheet" href="shared/styles.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.review-card{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:18px;display:flex;gap:16px;transition:all var(--t-base);cursor:pointer;}
+.review-card:hover{border-color:var(--border-strong);box-shadow:var(--shadow-md);transform:translateY(-1px);}
+.review-card.selected{border-color:var(--accent-violet);box-shadow:var(--shadow-glow-v);}
+.review-img{width:80px;height:80px;border-radius:var(--radius-sm);background:var(--bg-elevated);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;}
+.review-meta{flex:1;min-width:0;}
+.review-meta h4{font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:4px;}
+.review-meta .sub-id{font-size:10.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;}
+.conf-bar{display:flex;align-items:center;gap:8px;margin-top:8px;}
+.conf-label{font-size:10.5px;color:var(--text-muted);width:60px;flex-shrink:0;}
+.conf-track{flex:1;height:5px;background:var(--bg-elevated);border-radius:4px;overflow:hidden;}
+.conf-fill{height:100%;border-radius:4px;}
+.conf-val{font-size:11px;font-weight:700;width:36px;text-align:right;}
+.action-panel{display:flex;flex-direction:column;gap:8px;align-items:flex-end;justify-content:space-between;}
+.review-list{display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 260px);overflow-y:auto;padding-right:2px;}
+.detail-panel{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:22px;position:sticky;top:0;}
+.detail-img-lg{width:100%;aspect-ratio:4/3;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:56px;margin-bottom:16px;}
+.cat-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:var(--radius-sm);font-size:12.5px;font-weight:600;background:var(--bg-elevated);border:1px solid var(--border-subtle);color:var(--text-primary);cursor:pointer;transition:all var(--t-fast);}
+.cat-pill:hover,.cat-pill.selected{background:var(--accent-violet);border-color:var(--accent-violet);color:#fff;}
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0;}
+.reviewer-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.rs-card{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px;text-align:center;}
+.rs-val{font-size:22px;font-weight:800;color:var(--text-primary);letter-spacing:-0.5px;}
+.rs-sub{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-top:2px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- RAIL -->
+  <nav class="rail" role="navigation" aria-label="Reviewer Navigation">
+    <div class="rail-logo">
+      <div class="logo-mark">T2</div>
+      <div>
+        <div class="logo-text">T2T Review</div>
+        <div class="logo-sub">Human-in-loop</div>
+      </div>
+    </div>
+
+    <div class="rail-section">Queue</div>
+    <a class="rail-item active" href="#">
+      <span class="icon">📋</span> Review Queue
+      <span class="badge warn">47</span>
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">⚡</span> High Priority
+      <span class="badge danger">12</span>
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🔍</span> Low Confidence
+    </a>
+
+    <div class="rail-section">My Work</div>
+    <a class="rail-item" href="#">
+      <span class="icon">✅</span> My Approvals
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">❌</span> My Rejections
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">📊</span> My Stats
+    </a>
+
+    <div class="rail-section">Browse</div>
+    <a class="rail-item" href="#">
+      <span class="icon">🗂</span> All Submissions
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🏷</span> By Category
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">👤</span> By User
+    </a>
+
+    <div class="rail-section">Support</div>
+    <a class="rail-item" href="#">
+      <span class="icon">📖</span> Label Guide
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">💬</span> Team Chat
+    </a>
+
+    <div class="rail-footer">
+      <div class="rail-user">
+        <div class="avatar">RK</div>
+        <div>
+          <div class="user-name">Ravi Kumar</div>
+          <div class="user-role">Reviewer</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <span class="role-chip reviewer">👁 Reviewer</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-breadcrumb">
+          <span>T2T</span> / <span>Reviewer</span> / <span style="color:var(--text-primary)">Review Queue</span>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="topbar-search">🔍 Search by user or ID...</div>
+        <button class="btn btn-ghost btn-sm">🔀 Shuffle</button>
+        <button class="btn btn-primary btn-sm">⚡ Batch Review</button>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="page-header">
+        <h1>Review Queue</h1>
+        <p>Low-confidence ML predictions awaiting human verification.</p>
+        <div class="header-meta">
+          <span class="role-chip reviewer">👁 Reviewer</span>
+          <span class="text-sm text-muted">47 items pending · Avg wait 2.4h</span>
+        </div>
+      </div>
+
+      <!-- MY STATS -->
+      <div class="reviewer-stats">
+        <div class="rs-card">
+          <div class="rs-val" style="color:var(--success)">1,204</div>
+          <div class="rs-sub">Total Reviewed</div>
+        </div>
+        <div class="rs-card">
+          <div class="rs-val" style="color:var(--accent-violet)">94.2%</div>
+          <div class="rs-sub">Accuracy</div>
+        </div>
+        <div class="rs-card">
+          <div class="rs-val" style="color:var(--accent-amber)">38</div>
+          <div class="rs-sub">Today</div>
+        </div>
+        <div class="rs-card">
+          <div class="rs-val" style="color:var(--accent-cyan)">1.8 min</div>
+          <div class="rs-sub">Avg. Per Item</div>
+        </div>
+      </div>
+
+      <!-- NOTICE -->
+      <div class="notice warning">
+        ⚠ <strong>12 high-priority items</strong> have been queued for over 6 hours — please review these first.
+      </div>
+
+      <!-- 2 COLUMN: LIST + DETAIL -->
+      <div class="content-grid wide-left" style="align-items:flex-start;">
+
+        <!-- QUEUE LIST -->
+        <div>
+          <div class="review-list">
+            <!-- Item 1 — selected -->
+            <div class="review-card selected" id="card-1">
+              <div class="review-img">♻️</div>
+              <div class="review-meta">
+                <h4>Plastic Bottle — 0.43 confidence</h4>
+                <div class="sub-id">#sub_7f3a...c12e</div>
+                <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                  <span class="tag">Arjun T.</span>
+                  <span class="tag">📍 Mumbai</span>
+                  <span class="tag">Sep 5, 9:12 AM</span>
+                </div>
+                <div class="conf-bar">
+                  <span class="conf-label">ML Conf.</span>
+                  <div class="conf-track"><div class="conf-fill" style="width:43%;background:var(--warning)"></div></div>
+                  <span class="conf-val" style="color:var(--warning)">43%</span>
+                </div>
+                <div class="conf-bar">
+                  <span class="conf-label">Waste Gate</span>
+                  <div class="conf-track"><div class="conf-fill" style="width:82%;background:var(--success)"></div></div>
+                  <span class="conf-val" style="color:var(--success)">82%</span>
+                </div>
+              </div>
+              <div class="action-panel">
+                <span class="badge pending">Needs Review</span>
+                <button class="btn btn-success btn-sm">✅ Approve</button>
+                <button class="btn btn-danger btn-sm">❌ Reject</button>
+              </div>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="review-card" id="card-2">
+              <div class="review-img">🗃</div>
+              <div class="review-meta">
+                <h4>Cardboard Box — 0.38 confidence</h4>
+                <div class="sub-id">#sub_9a2b...d84f</div>
+                <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                  <span class="tag">Meera S.</span>
+                  <span class="tag">📍 Bangalore</span>
+                  <span class="tag">Sep 5, 8:45 AM</span>
+                </div>
+                <div class="conf-bar">
+                  <span class="conf-label">ML Conf.</span>
+                  <div class="conf-track"><div class="conf-fill" style="width:38%;background:var(--danger)"></div></div>
+                  <span class="conf-val" style="color:var(--danger)">38%</span>
+                </div>
+                <div class="conf-bar">
+                  <span class="conf-label">Waste Gate</span>
+                  <div class="conf-track"><div class="conf-fill" style="width:76%;background:var(--success)"></div></div>
+                  <span class="conf-val" style="color:var(--success)">76%</span>
+                </div>
+              </div>
+              <div class="action-panel">
+                <span class="badge review">Needs Review</span>
+                <button class="btn btn-success btn-sm">✅ Approve</button>
+                <button class="btn btn-danger btn-sm">❌ Reject</button>
+              </div>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="review-card" id="card-3">
+              <div class="review-img">🔋</div>
+              <div class="review-meta">
+                <h4>Battery Pack — 0.51 confidence</h4>
+                <div class="sub-id">#sub_1c8d...f39a</div>
+                <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                  <span class="tag">Suresh R.</span>
+                  <span class="tag">📍 Hyderabad</span>
+                  <span class="tag">Sep 5, 7:30 AM</span>
+                </div>
+                <div class="conf-bar">
+                  <span class="conf-label">ML Conf.</span>
+                  <div class="conf-track"><div class="conf-fill" style="width:51%;background:var(--warning)"></div></div>
+                  <span class="conf-val" style="color:var(--warning)">51%</span>
+                </div>
+                <div class="conf-bar">
+                  <span class="conf-label">Waste Gate</span>
+                  <div class="conf-track"><div class="conf-fill" style="width:91%;background:var(--success)"></div></div>
+                  <span class="conf-val" style="color:var(--success)">91%</span>
+                </div>
+              </div>
+              <div class="action-panel">
+                <span class="badge pending">Needs Review</span>
+                <button class="btn btn-success btn-sm">✅ Approve</button>
+                <button class="btn btn-danger btn-sm">❌ Reject</button>
+              </div>
+            </div>
+
+            <!-- Item 4 -->
+            <div class="review-card" id="card-4">
+              <div class="review-img">🍶</div>
+              <div class="review-meta">
+                <h4>Glass Jar — 0.44 confidence</h4>
+                <div class="sub-id">#sub_4e7f...b22c</div>
+                <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                  <span class="tag">Preethi N.</span>
+                  <span class="tag">📍 Chennai</span>
+                  <span class="tag">Sep 4, 11:22 PM</span>
+                </div>
+                <div class="conf-bar">
+                  <span class="conf-label">ML Conf.</span>
+                  <div class="conf-track"><div class="conf-fill" style="width:44%;background:var(--warning)"></div></div>
+                  <span class="conf-val" style="color:var(--warning)">44%</span>
+                </div>
+                <div class="conf-bar">
+                  <span class="conf-label">Waste Gate</span>
+                  <div class="conf-track"><div class="conf-fill" style="width:68%;background:var(--success)"></div></div>
+                  <span class="conf-val" style="color:var(--success)">68%</span>
+                </div>
+              </div>
+              <div class="action-panel">
+                <span class="badge review">Needs Review</span>
+                <button class="btn btn-success btn-sm">✅ Approve</button>
+                <button class="btn btn-danger btn-sm">❌ Reject</button>
+              </div>
+            </div>
+
+            <!-- Item 5 -->
+            <div class="review-card" id="card-5">
+              <div class="review-img">📦</div>
+              <div class="review-meta">
+                <h4>Metal Can — 0.29 confidence</h4>
+                <div class="sub-id">#sub_8b1a...e94d</div>
+                <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+                  <span class="tag">Kiran R.</span>
+                  <span class="tag">📍 Pune</span>
+                  <span class="tag">Sep 4, 6:18 PM</span>
+                </div>
+                <div class="conf-bar">
+                  <span class="conf-label">ML Conf.</span>
+                  <div class="conf-track"><div class="conf-fill" style="width:29%;background:var(--danger)"></div></div>
+                  <span class="conf-val" style="color:var(--danger)">29%</span>
+                </div>
+                <div class="conf-bar">
+                  <span class="conf-label">Waste Gate</span>
+                  <div class="conf-track"><div class="conf-fill" style="width:55%;background:var(--warning)"></div></div>
+                  <span class="conf-val" style="color:var(--warning)">55%</span>
+                </div>
+              </div>
+              <div class="action-panel">
+                <span class="badge pending">Needs Review</span>
+                <button class="btn btn-success btn-sm">✅ Approve</button>
+                <button class="btn btn-danger btn-sm">❌ Reject</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DETAIL PANEL -->
+        <div class="detail-panel">
+          <div class="detail-img-lg">♻️</div>
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:4px;">Plastic Bottle</h3>
+          <div class="text-xs text-muted font-mono mb-16">#sub_7f3a...c12e</div>
+
+          <div class="metric-row">
+            <span class="metric-label">Submitted by</span>
+            <span class="metric-value">Arjun Teja</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Captured at</span>
+            <span class="metric-value">Sep 5, 09:12 AM</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">ML Prediction</span>
+            <span class="metric-value">Plastic</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">ML Confidence</span>
+            <span class="metric-value" style="color:var(--warning)">43%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Waste Gate Score</span>
+            <span class="metric-value" style="color:var(--success)">82%</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Model Version</span>
+            <span class="metric-value font-mono">v2.4.1</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Location</span>
+            <span class="metric-value">Mumbai 19.07°N 72.87°E</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">Points if Approved</span>
+            <span class="metric-value" style="color:var(--accent-violet)">+10 pts</span>
+          </div>
+
+          <div class="divider"></div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Override Category</div>
+          <div class="cat-grid">
+            <div class="cat-pill selected">♻️ Plastic</div>
+            <div class="cat-pill">🍶 Glass</div>
+            <div class="cat-pill">📄 Paper</div>
+            <div class="cat-pill">⚙ Metal</div>
+            <div class="cat-pill">🔋 E-Waste</div>
+            <div class="cat-pill">🌱 Organic</div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:16px;">
+            <button class="btn btn-success" style="flex:1;">✅ Approve &amp; Award</button>
+            <button class="btn btn-danger" style="flex:1;">❌ Reject</button>
+          </div>
+          <div style="margin-top:8px;">
+            <button class="btn btn-ghost" style="width:100%;justify-content:center;">⏭ Skip</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.rail-item').forEach(el => {
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('.rail-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  });
+});
+document.querySelectorAll('.review-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.review-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+  });
+});
+document.querySelectorAll('.cat-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('selected'));
+    pill.classList.add('selected');
+  });
+});
+</script>
+</body>
+</html>

@@ -62,10 +62,13 @@ export const submissions = pgTable(
     imageKey: text("image_key").notNull(), // R2 object key
     imagePhash: text("image_phash"), // perceptual hash for dup detection
     status: submissionStatusEnum("status").notNull().default("pending"),
-    mlCategory: categoryEnum("ml_category"),
+    mlCategory: categoryEnum("ml_category"), // model prediction
     mlConfidence: doublePrecision("ml_confidence"),
     mlModelVersion: text("ml_model_version"),
-    productName: text("product_name"), // specific item name from the model
+    mlIsWaste: boolean("ml_is_waste"), // waste-gate verdict
+    mlWasteScore: doublePrecision("ml_waste_score"),
+    finalCategory: categoryEnum("final_category"), // confirmed label (auto=ml, else reviewer) — retrain truth
+    productName: text("product_name"),
     awardedPoints: integer("awarded_points"),
     reviewedBy: uuid("reviewed_by").references(() => users.id),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),

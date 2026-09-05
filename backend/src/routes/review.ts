@@ -53,7 +53,7 @@ export async function reviewRoutes(app: FastifyInstance) {
         .update(schema.submissions)
         .set({
           status: "approved",
-          mlCategory: category,
+          finalCategory: category, // reviewer's confirmed label (ml_category keeps the model's guess)
           awardedPoints: points,
           reviewedBy: req.user.sub,
           reviewedAt: new Date(),

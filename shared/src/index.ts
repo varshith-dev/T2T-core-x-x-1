@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-// ---- Roles (fixed set; gates the dashboard) ----
-export const ROLES = ["user", "reviewer", "catalog_manager", "admin"] as const;
+// ---- Roles (gate the dashboards). super_admin can do everything + grant roles. ----
+export const ROLES = ["user", "reviewer", "catalog_manager", "admin", "super_admin"] as const;
 export type Role = (typeof ROLES)[number];
 
 // ---- Segregation categories. Appended (never reorder) so the DB enum change

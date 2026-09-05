@@ -28,7 +28,8 @@ export const requireRole =
   async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
     await authenticate(req, reply);
     if (reply.sent) return;
-    if (!roles.includes(req.user.role)) {
+    // super_admin can access everything
+    if (req.user.role !== "super_admin" && !roles.includes(req.user.role)) {
       reply.code(403).send({ error: "forbidden" });
     }
   };

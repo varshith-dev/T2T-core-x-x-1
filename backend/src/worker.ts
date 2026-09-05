@@ -10,7 +10,16 @@ let running = false;
 
 async function toReview(
   id: string,
-  ml: { category?: string; confidence?: number; modelVersion?: string; productName?: string | null } | null,
+  ml:
+    | {
+        category?: string;
+        confidence?: number;
+        modelVersion?: string;
+        productName?: string | null;
+        isWaste?: boolean;
+        wasteScore?: number;
+      }
+    | null,
 ) {
   await db
     .update(schema.submissions)
@@ -19,6 +28,8 @@ async function toReview(
       mlCategory: ml?.category as any,
       mlConfidence: ml?.confidence,
       mlModelVersion: ml?.modelVersion,
+      mlIsWaste: ml?.isWaste ?? null,
+      mlWasteScore: ml?.wasteScore ?? null,
       productName: ml?.productName ?? null,
     })
     .where(eq(schema.submissions.id, id));
@@ -80,6 +91,9 @@ async function processOne(): Promise<boolean> {
       mlCategory: ml.category,
       mlConfidence: ml.confidence,
       mlModelVersion: ml.modelVersion,
+      mlIsWaste: ml.isWaste ?? null,
+      mlWasteScore: ml.wasteScore ?? null,
+      finalCategory: ml.category, // auto-approved: the ML label is the confirmed label
       productName: ml.productName ?? null,
       awardedPoints: rule.points,
     })

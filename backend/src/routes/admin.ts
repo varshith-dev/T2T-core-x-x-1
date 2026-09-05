@@ -53,6 +53,10 @@ export async function adminRoutes(app: FastifyInstance) {
   app.patch("/admin/users/:id/role", { preHandler: requireRole("admin") }, async (req, reply) => {
     const { id } = req.params as { id: string };
     const { role } = roleUpdateSchema.parse(req.body);
+    // only a super admin can grant admin / super_admin
+    if ((role === "admin" || role === "super_admin") && req.user.role !== "super_admin") {
+      return reply.code(403).send({ error: "only a super admin can grant admin roles" });
+    }
     const [u] = await db
       .update(schema.users)
       .set({ role })

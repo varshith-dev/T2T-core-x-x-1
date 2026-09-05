@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Super Admin — T2T Command Center</title>
+<meta name="description" content="Super Admin dashboard for T2T platform — full system control, role assignment, and global configuration."/>
+<link rel="stylesheet" href="shared/styles.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.quick-action-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.qa-card{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:18px;cursor:pointer;transition:all var(--t-base);display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-decoration:none;}
+.qa-card:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.qa-card .qa-icon{font-size:22px;}
+.qa-card .qa-label{font-size:12.5px;font-weight:700;color:var(--text-primary);}
+.qa-card .qa-desc{font-size:11px;color:var(--text-muted);}
+.user-row-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0;}
+.system-health{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.health-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-elevated);border-radius:var(--radius-sm);border:1px solid var(--border-subtle);}
+.health-status{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;}
+.health-status.ok{color:var(--success);}
+.health-status.warn{color:var(--warning);}
+.health-dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- RAIL -->
+  <nav class="rail" role="navigation" aria-label="Super Admin Navigation">
+    <div class="rail-logo">
+      <div class="logo-mark">T2</div>
+      <div>
+        <div class="logo-text">T2T Platform</div>
+        <div class="logo-sub">Command Center</div>
+      </div>
+    </div>
+
+    <div class="rail-section">Overview</div>
+    <a class="rail-item active" href="#" id="nav-overview">
+      <span class="icon">⬡</span> Command Overview
+    </a>
+    <a class="rail-item" href="#" id="nav-system">
+      <span class="icon">⚙</span> System Health
+    </a>
+
+    <div class="rail-section">User Management</div>
+    <a class="rail-item" href="#" id="nav-users">
+      <span class="icon">👥</span> All Users
+      <span class="badge">2.4k</span>
+    </a>
+    <a class="rail-item" href="#" id="nav-roles">
+      <span class="icon">🔐</span> Role Assignment
+    </a>
+    <a class="rail-item" href="#" id="nav-suspended">
+      <span class="icon">🚫</span> Suspended Accounts
+      <span class="badge warn">3</span>
+    </a>
+
+    <div class="rail-section">Platform Config</div>
+    <a class="rail-item" href="#" id="nav-rules">
+      <span class="icon">📐</span> Point Rules
+    </a>
+    <a class="rail-item" href="#" id="nav-categories">
+      <span class="icon">🏷</span> Categories
+    </a>
+    <a class="rail-item" href="#" id="nav-coupons">
+      <span class="icon">🎟</span> Coupon Catalog
+    </a>
+
+    <div class="rail-section">Security</div>
+    <a class="rail-item" href="#" id="nav-audit">
+      <span class="icon">🛡</span> Audit Logs
+    </a>
+    <a class="rail-item" href="#" id="nav-fraud">
+      <span class="icon">⚠</span> Fraud Alerts
+      <span class="badge danger">7</span>
+    </a>
+    <a class="rail-item" href="#" id="nav-db">
+      <span class="icon">🗄</span> DB Viewer
+    </a>
+
+    <div class="rail-section">ML Pipeline</div>
+    <a class="rail-item" href="#" id="nav-ml">
+      <span class="icon">🤖</span> ML Monitor
+    </a>
+    <a class="rail-item" href="#" id="nav-reprocess">
+      <span class="icon">🔄</span> Reprocess Queue
+    </a>
+
+    <div class="rail-footer">
+      <div class="rail-user">
+        <div class="avatar">SA</div>
+        <div>
+          <div class="user-name">Varshith D.</div>
+          <div class="user-role">Super Admin</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <span class="role-chip super-admin">⚡ Super Admin</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-breadcrumb">
+          <span>T2T</span> / <span>Super Admin</span> / <span style="color:var(--text-primary)">Command Overview</span>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="topbar-search">🔍 Search users, submissions...</div>
+        <button class="btn btn-ghost btn-sm">📋 Export</button>
+        <button class="btn btn-primary btn-sm">+ New User</button>
+      </div>
+    </header>
+
+    <main class="page" id="main-content">
+      <div class="page-header">
+        <h1>Command Center</h1>
+        <p>Full platform oversight — users, roles, ML, security, and configuration.</p>
+        <div class="header-meta">
+          <span class="role-chip super-admin">⚡ Super Admin</span>
+          <span class="text-sm text-muted">Last synced: just now</span>
+        </div>
+      </div>
+
+      <!-- QUICK ACTIONS -->
+      <div class="quick-action-grid">
+        <a class="qa-card" href="#">
+          <span class="qa-icon">🔐</span>
+          <span class="qa-label">Assign Roles</span>
+          <span class="qa-desc">Promote or demote any user</span>
+        </a>
+        <a class="qa-card" href="#">
+          <span class="qa-icon">📐</span>
+          <span class="qa-label">Edit Point Rules</span>
+          <span class="qa-desc">Per-category points & caps</span>
+        </a>
+        <a class="qa-card" href="#">
+          <span class="qa-icon">🔄</span>
+          <span class="qa-label">Reprocess Queue</span>
+          <span class="qa-desc">Re-classify stale submissions</span>
+        </a>
+        <a class="qa-card" href="#">
+          <span class="qa-icon">🛡</span>
+          <span class="qa-label">Security Audit</span>
+          <span class="qa-desc">Full ledger & review log</span>
+        </a>
+      </div>
+
+      <!-- STATS -->
+      <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);">
+        <div class="stat-card violet">
+          <span class="stat-icon">👥</span>
+          <div class="stat-value">2,413</div>
+          <div class="stat-label">Total Users</div>
+          <div class="stat-delta up">↑ 4.2% this week</div>
+        </div>
+        <div class="stat-card cyan">
+          <span class="stat-icon">📸</span>
+          <div class="stat-value">18.7k</div>
+          <div class="stat-label">Submissions</div>
+          <div class="stat-delta up">↑ 12% this week</div>
+        </div>
+        <div class="stat-card emerald">
+          <span class="stat-icon">✅</span>
+          <div class="stat-value">14.2k</div>
+          <div class="stat-label">Approved</div>
+          <div class="stat-delta up">↑ 9%</div>
+        </div>
+        <div class="stat-card amber">
+          <span class="stat-icon">🪙</span>
+          <div class="stat-value">824k</div>
+          <div class="stat-label">Points Issued</div>
+          <div class="stat-delta up">↑ 7%</div>
+        </div>
+        <div class="stat-card rose">
+          <span class="stat-icon">⚠</span>
+          <div class="stat-value">7</div>
+          <div class="stat-label">Fraud Flags</div>
+          <div class="stat-delta down">↑ 2 new</div>
+        </div>
+        <div class="stat-card indigo">
+          <span class="stat-icon">🔐</span>
+          <div class="stat-value">6</div>
+          <div class="stat-label">Staff Members</div>
+          <div class="stat-delta up">stable</div>
+        </div>
+      </div>
+
+      <!-- ROW 1 -->
+      <div class="content-grid wide-left" style="margin-bottom:16px;">
+        <!-- Platform Activity Chart -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot"></span> Platform Activity — 14 Days</span>
+            <span class="block-action">Full Report →</span>
+          </div>
+          <div class="block-body">
+            <div class="chart-wrap" style="height:200px;">
+              <canvas id="activityChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Health -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot cyan"></span> System Health</span>
+            <span class="block-action">Refresh</span>
+          </div>
+          <div class="block-body">
+            <div class="system-health">
+              <div class="health-item">
+                <span style="font-size:12px;color:var(--text-secondary)">API Server</span>
+                <span class="health-status ok"><span class="health-dot"></span>Online</span>
+              </div>
+              <div class="health-item">
+                <span style="font-size:12px;color:var(--text-secondary)">Database</span>
+                <span class="health-status ok"><span class="health-dot"></span>Healthy</span>
+              </div>
+              <div class="health-item">
+                <span style="font-size:12px;color:var(--text-secondary)">ML Worker</span>
+                <span class="health-status ok"><span class="health-dot"></span>Running</span>
+              </div>
+              <div class="health-item">
+                <span style="font-size:12px;color:var(--text-secondary)">R2 Storage</span>
+                <span class="health-status ok"><span class="health-dot"></span>Connected</span>
+              </div>
+              <div class="health-item">
+                <span style="font-size:12px;color:var(--text-secondary)">Redis Queue</span>
+                <span class="health-status warn"><span class="health-dot"></span>Slow</span>
+              </div>
+              <div class="health-item">
+                <span style="font-size:12px;color:var(--text-secondary)">Email SMTP</span>
+                <span class="health-status ok"><span class="health-dot"></span>Ok</span>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="metric-row">
+              <span class="metric-label">Avg API Latency</span>
+              <span class="metric-value">42 ms</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">ML Queue Depth</span>
+              <span class="metric-value">124 jobs</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">DB Connections</span>
+              <span class="metric-value">18 / 50</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2 -->
+      <div class="content-grid wide-right" style="margin-bottom:16px;">
+        <!-- Role Distribution -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot amber"></span> Role Distribution</span>
+          </div>
+          <div class="block-body">
+            <div class="donut-wrap" style="height:160px;">
+              <canvas id="roleChart"></canvas>
+              <div class="donut-center">
+                <span class="dc-val">2,413</span>
+                <span class="dc-label">Total</span>
+              </div>
+            </div>
+            <div class="legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#7c7cff"></div>Users (2,407)</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#22d3ee"></div>Reviewers (3)</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>Admins (2)</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#fb7185"></div>Super (1)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Management Table -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot rose"></span> Staff Members</span>
+            <span class="block-action">Manage All →</span>
+          </div>
+          <div class="block-body" style="padding:0;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Submissions Reviewed</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="flex-center gap-8">
+                      <div class="user-row-avatar" style="background:linear-gradient(135deg,#7c7cff,#818cf8)">RK</div>
+                      <div><div class="primary fw-600">Ravi K.</div><div class="text-xs text-muted">ravi@t2t.io</div></div>
+                    </div>
+                  </td>
+                  <td><span class="badge reviewer">reviewer</span></td>
+                  <td><span class="badge active">active</span></td>
+                  <td class="primary">1,204</td>
+                  <td><button class="btn btn-ghost btn-sm">Edit Role</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="flex-center gap-8">
+                      <div class="user-row-avatar" style="background:linear-gradient(135deg,#22d3ee,#60a5fa)">PM</div>
+                      <div><div class="primary fw-600">Priya M.</div><div class="text-xs text-muted">priya@t2t.io</div></div>
+                    </div>
+                  </td>
+                  <td><span class="badge reviewer">reviewer</span></td>
+                  <td><span class="badge active">active</span></td>
+                  <td class="primary">987</td>
+                  <td><button class="btn btn-ghost btn-sm">Edit Role</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="flex-center gap-8">
+                      <div class="user-row-avatar" style="background:linear-gradient(135deg,#fbbf24,#f97316)">AV</div>
+                      <div><div class="primary fw-600">Ananya V.</div><div class="text-xs text-muted">ananya@t2t.io</div></div>
+                    </div>
+                  </td>
+                  <td><span class="badge admin">admin</span></td>
+                  <td><span class="badge active">active</span></td>
+                  <td class="primary">—</td>
+                  <td><button class="btn btn-ghost btn-sm">Edit Role</button></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="flex-center gap-8">
+                      <div class="user-row-avatar" style="background:linear-gradient(135deg,#fb7185,#f43f5e)">JS</div>
+                      <div><div class="primary fw-600">Jaya S.</div><div class="text-xs text-muted">jaya@t2t.io</div></div>
+                    </div>
+                  </td>
+                  <td><span class="badge reviewer">reviewer</span></td>
+                  <td><span class="badge suspended">suspended</span></td>
+                  <td class="primary">342</td>
+                  <td><button class="btn btn-success btn-sm">Unsuspend</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 3 -->
+      <div class="content-grid thirds">
+        <!-- Point Rules -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot emerald"></span> Point Rules</span>
+            <span class="block-action">Edit Rules →</span>
+          </div>
+          <div class="block-body" style="padding:0;">
+            <table class="data-table">
+              <thead><tr><th>Category</th><th>Points</th><th>Daily Cap</th><th>Active</th></tr></thead>
+              <tbody>
+                <tr><td class="primary">Plastic</td><td>10</td><td>10</td><td><span class="badge active">active</span></td></tr>
+                <tr><td class="primary">Glass</td><td>15</td><td>8</td><td><span class="badge active">active</span></td></tr>
+                <tr><td class="primary">Paper</td><td>5</td><td>15</td><td><span class="badge active">active</span></td></tr>
+                <tr><td class="primary">Metal</td><td>20</td><td>5</td><td><span class="badge active">active</span></td></tr>
+                <tr><td class="primary">E-Waste</td><td>50</td><td>3</td><td><span class="badge active">active</span></td></tr>
+                <tr><td class="primary">Organic</td><td>8</td><td>12</td><td><span class="badge suspended">inactive</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Recent Activity Feed -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot cyan"></span> Recent Admin Actions</span>
+          </div>
+          <div class="block-body">
+            <div class="feed-item">
+              <div class="feed-dot violet"></div>
+              <div class="feed-content">
+                <p><strong>Varshith D.</strong> promoted <strong>Ravi K.</strong> to reviewer</p>
+                <div class="feed-time">2 min ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot amber"></div>
+              <div class="feed-content">
+                <p><strong>Ananya V.</strong> updated Metal points to <strong>20</strong></p>
+                <div class="feed-time">18 min ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot rose"></div>
+              <div class="feed-content">
+                <p><strong>System</strong> flagged <strong>7 duplicate</strong> submissions</p>
+                <div class="feed-time">1 hr ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot emerald"></div>
+              <div class="feed-content">
+                <p><strong>Varshith D.</strong> reprocessed <strong>42 submissions</strong> after model upgrade</p>
+                <div class="feed-time">3 hr ago</div>
+              </div>
+            </div>
+            <div class="feed-item">
+              <div class="feed-dot cyan"></div>
+              <div class="feed-content">
+                <p><strong>System</strong> auto-approved <strong>312 submissions</strong> (high confidence)</p>
+                <div class="feed-time">6 hr ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending Redemptions -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot amber"></span> Pending Redemptions</span>
+            <span class="block-action">View All →</span>
+          </div>
+          <div class="block-body" style="padding:0;">
+            <table class="data-table">
+              <thead><tr><th>User</th><th>Coupon</th><th>Cost</th><th>Action</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td class="primary">Arjun T.</td>
+                  <td>₹50 Amazon</td>
+                  <td>500 pts</td>
+                  <td><button class="btn btn-success btn-sm">Approve</button></td>
+                </tr>
+                <tr>
+                  <td class="primary">Meera S.</td>
+                  <td>₹100 Flipkart</td>
+                  <td>1,000 pts</td>
+                  <td><button class="btn btn-success btn-sm">Approve</button></td>
+                </tr>
+                <tr>
+                  <td class="primary">Kiran R.</td>
+                  <td>₹25 Swiggy</td>
+                  <td>250 pts</td>
+                  <td><button class="btn btn-success btn-sm">Approve</button></td>
+                </tr>
+                <tr>
+                  <td class="primary">Deepa N.</td>
+                  <td>₹200 Myntra</td>
+                  <td>2,000 pts</td>
+                  <td><button class="btn btn-danger btn-sm">Reject</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ── Chart.js defaults ──────────────────────────────
+Chart.defaults.color = '#9a9aaa';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+
+// Activity Chart
+const actCtx = document.getElementById('activityChart').getContext('2d');
+const days = ['08-23','08-24','08-25','08-26','08-27','08-28','08-29','08-30','08-31','09-01','09-02','09-03','09-04','09-05'];
+new Chart(actCtx, {
+  type: 'line',
+  data: {
+    labels: days,
+    datasets: [
+      { label: 'Submissions', data: [312,428,387,501,620,543,490,712,680,840,760,920,880,1020], borderColor: '#7c7cff', backgroundColor: 'rgba(124,124,255,0.08)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#7c7cff' },
+      { label: 'Approved', data: [210,320,290,380,480,420,380,580,540,700,620,780,740,890], borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.05)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#34d399' },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, padding: 12, usePointStyle: true } } },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { maxTicksLimit: 7, font: { size: 10 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// Role Donut
+const roleCtx = document.getElementById('roleChart').getContext('2d');
+new Chart(roleCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Users', 'Reviewers', 'Admins', 'Super Admin'],
+    datasets: [{ data: [2407, 3, 2, 1], backgroundColor: ['#7c7cff','#22d3ee','#fbbf24','#fb7185'], borderWidth: 0, hoverOffset: 4 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '70%',
+    plugins: { legend: { display: false } }
+  }
+});
+
+// Rail click active state
+document.querySelectorAll('.rail-item').forEach(el => {
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('.rail-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

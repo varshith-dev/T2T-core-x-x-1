@@ -24,21 +24,34 @@ export async function seed(log: (m: string) => void) {
       .onConflictDoNothing({ target: schema.pointRules.category });
   }
 
-  if (env.ADMIN_EMAIL && env.ADMIN_PASSWORD) {
-    const email = env.ADMIN_EMAIL.toLowerCase();
-    const [existing] = await db
-      .select({ id: schema.users.id })
-      .from(schema.users)
-      .where(eq(schema.users.email, email))
-      .limit(1);
-    if (!existing) {
-      await db.insert(schema.users).values({
-        email,
-        passwordHash: await hashPassword(env.ADMIN_PASSWORD),
-        displayName: "Admin",
-        role: "admin",
-      });
-      log(`bootstrapped admin user: ${email}`);
-    }
+  await bootstrap(env.ADMIN_EMAIL, env.ADMIN_PASSWORD, "admin", "Admin", log);
+  await bootstrap(env.SUPER_ADMIN_EMAIL, env.SUPER_ADMIN_PASSWORD, "super_admin", "Super Admin", log);
+}
+
+async function bootstrap(
+  emailRaw: string | undefined,
+  password: string | undefined,
+  role: "admin" | "super_admin",
+  displayName: string,
+  log: (m: string) => void,
+) {
+  if (!emailRaw || !password) return;
+  const email = emailRaw.toLowerCase();
+  const [existing] = await db
+    .select({ id: schema.users.id, role: schema.users.role })
+    .from(schema.users)
+    .where(eq(schema.users.email, email))
+    .limit(1);
+  if (!existing) {
+    await db.insert(schema.users).values({
+      email,
+      passwordHash: await hashPassword(password),
+      displayName,
+      role,
+    });
+    log(`bootstrapped ${role}: ${email}`);
+  } else if (existing.role !== role && role === "super_admin") {
+    await db.update(schema.users).set({ role }).where(eq(schema.users.id, existing.id));
+    log(`promoted ${email} to ${role}`);
   }
 }

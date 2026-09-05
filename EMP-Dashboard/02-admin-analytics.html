@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Admin Analytics — T2T Platform</title>
+<meta name="description" content="Admin analytics dashboard — KPIs, submission trends, category breakdown, coupon performance."/>
+<link rel="stylesheet" href="shared/styles.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.kpi-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:24px;}
+.kpi-card{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:16px;transition:all var(--t-fast);}
+.kpi-card:hover{border-color:var(--border-default);transform:translateY(-1px);}
+.kpi-val{font-size:24px;font-weight:800;letter-spacing:-0.8px;color:var(--text-primary);line-height:1;}
+.kpi-sub{font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-top:4px;}
+.kpi-icon{font-size:18px;margin-bottom:8px;display:block;}
+.filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:20px;}
+.filter-btn{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--bg-elevated);border:1px solid var(--border-subtle);color:var(--text-secondary);cursor:pointer;transition:all var(--t-fast);}
+.filter-btn.active,.filter-btn:hover{background:var(--accent-violet);border-color:var(--accent-violet);color:#fff;}
+.rank-bar{height:4px;background:var(--bg-elevated);border-radius:4px;margin-top:5px;overflow:hidden;}
+.rank-fill{height:100%;border-radius:4px;background:var(--accent-violet);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- RAIL -->
+  <nav class="rail" role="navigation" aria-label="Admin Navigation">
+    <div class="rail-logo">
+      <div class="logo-mark">T2</div>
+      <div>
+        <div class="logo-text">T2T Analytics</div>
+        <div class="logo-sub">Admin Portal</div>
+      </div>
+    </div>
+
+    <div class="rail-section">Analytics</div>
+    <a class="rail-item active" href="#">
+      <span class="icon">📊</span> Overview
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">📈</span> Submission Trends
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🪙</span> Points Economy
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🗂</span> Category Breakdown
+    </a>
+
+    <div class="rail-section">Users</div>
+    <a class="rail-item" href="#">
+      <span class="icon">👥</span> User Directory
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🏆</span> Leaderboard
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">📬</span> Redemption Queue
+      <span class="badge">12</span>
+    </a>
+
+    <div class="rail-section">Review</div>
+    <a class="rail-item" href="#">
+      <span class="icon">🔍</span> Review Queue
+      <span class="badge warn">47</span>
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🎟</span> Coupons
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">⚙</span> Point Rules
+    </a>
+
+    <div class="rail-section">Reports</div>
+    <a class="rail-item" href="#">
+      <span class="icon">📄</span> Export Reports
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🛡</span> Audit Log
+    </a>
+
+    <div class="rail-footer">
+      <div class="rail-user">
+        <div class="avatar">AV</div>
+        <div>
+          <div class="user-name">Ananya V.</div>
+          <div class="user-role">Administrator</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <span class="role-chip admin">🔑 Admin</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-breadcrumb">
+          <span>T2T</span> / <span>Admin</span> / <span style="color:var(--text-primary)">Analytics Overview</span>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="filter-bar" style="margin-bottom:0;">
+          <button class="filter-btn">7D</button>
+          <button class="filter-btn active">14D</button>
+          <button class="filter-btn">30D</button>
+          <button class="filter-btn">All</button>
+        </div>
+        <button class="btn btn-ghost btn-sm">📋 Export CSV</button>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="page-header">
+        <h1>Analytics Overview</h1>
+        <p>Platform-wide KPIs, submission trends, and points economy — last 14 days.</p>
+        <div class="header-meta">
+          <span class="role-chip admin">🔑 Admin</span>
+          <span class="text-sm text-muted">Sep 5, 2026 · 11:34 AM</span>
+        </div>
+      </div>
+
+      <!-- KPI STRIP -->
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <span class="kpi-icon">👥</span>
+          <div class="kpi-val">2,413</div>
+          <div class="kpi-sub">Total Users</div>
+          <div class="stat-delta up mt-4">↑ 4.2%</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon">📸</span>
+          <div class="kpi-val">18.7k</div>
+          <div class="kpi-sub">Submissions</div>
+          <div class="stat-delta up mt-4">↑ 12%</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon">✅</span>
+          <div class="kpi-val">76%</div>
+          <div class="kpi-sub">Approval Rate</div>
+          <div class="stat-delta up mt-4">↑ 2pp</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon">⏳</span>
+          <div class="kpi-val">47</div>
+          <div class="kpi-sub">Needs Review</div>
+          <div class="stat-delta down mt-4">↑ 8 new</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon">🪙</span>
+          <div class="kpi-val">824k</div>
+          <div class="kpi-sub">Pts Issued</div>
+          <div class="stat-delta up mt-4">↑ 7%</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon">💸</span>
+          <div class="kpi-val">342k</div>
+          <div class="kpi-sub">Pts Spent</div>
+          <div class="stat-delta up mt-4">↑ 5%</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-icon">🎟</span>
+          <div class="kpi-val">12</div>
+          <div class="kpi-sub">Pending Redeem</div>
+          <div class="stat-delta down mt-4">Action needed</div>
+        </div>
+      </div>
+
+      <!-- ROW 1: dual chart -->
+      <div class="content-grid" style="margin-bottom:16px;">
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot"></span> Submissions per Day</span>
+            <span class="block-action">Full Report →</span>
+          </div>
+          <div class="block-body">
+            <div class="chart-wrap" style="height:195px;"><canvas id="submissionsChart"></canvas></div>
+          </div>
+        </div>
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot amber"></span> Points Economy (Daily)</span>
+          </div>
+          <div class="block-body">
+            <div class="chart-wrap" style="height:195px;"><canvas id="pointsChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2 -->
+      <div class="content-grid thirds" style="margin-bottom:16px;">
+        <!-- Category Breakdown -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot emerald"></span> Category Breakdown</span>
+          </div>
+          <div class="block-body">
+            <div class="chart-wrap" style="height:160px;">
+              <canvas id="categoryChart"></canvas>
+            </div>
+            <div class="legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#7c7cff"></div>Plastic</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#22d3ee"></div>Glass</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>Paper</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>Metal</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#fb7185"></div>E-Waste</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submission Status -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot cyan"></span> Status Distribution</span>
+          </div>
+          <div class="block-body">
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <div class="flex-between"><span class="metric-label">Approved</span><span class="metric-value">14,213 (76%)</span></div>
+                <div class="progress-bar"><div class="progress-fill emerald" style="width:76%"></div></div>
+              </div>
+              <div>
+                <div class="flex-between"><span class="metric-label">Pending</span><span class="metric-value">2,840 (15%)</span></div>
+                <div class="progress-bar"><div class="progress-fill amber" style="width:15%"></div></div>
+              </div>
+              <div>
+                <div class="flex-between"><span class="metric-label">Needs Review</span><span class="metric-value">1,121 (6%)</span></div>
+                <div class="progress-bar"><div class="progress-fill cyan" style="width:6%"></div></div>
+              </div>
+              <div>
+                <div class="flex-between"><span class="metric-label">Rejected</span><span class="metric-value">560 (3%)</span></div>
+                <div class="progress-bar"><div class="progress-fill rose" style="width:3%"></div></div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <div class="metric-row">
+              <span class="metric-label">Avg. Processing Time</span>
+              <span class="metric-value">2.3 sec</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">ML Auto-Approval Rate</span>
+              <span class="metric-value">91.2%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Leaderboard -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot rose"></span> Top Earners Today</span>
+            <span class="block-action">Full Leaderboard →</span>
+          </div>
+          <div class="block-body" style="padding:0 20px;">
+            <div style="padding:12px 0;" id="leaderboard-list">
+              <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">
+                <div class="flex-center gap-8">
+                  <span style="font-size:18px;">🥇</span>
+                  <span class="fw-600" style="font-size:13px;">Arjun T.</span>
+                </div>
+                <span style="font-size:13px;font-weight:700;color:var(--accent-amber);">4,820 pts</span>
+              </div>
+              <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">
+                <div class="flex-center gap-8">
+                  <span style="font-size:18px;">🥈</span>
+                  <span class="fw-600" style="font-size:13px;">Meera S.</span>
+                </div>
+                <span style="font-size:13px;font-weight:700;color:var(--text-secondary);">3,950 pts</span>
+              </div>
+              <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">
+                <div class="flex-center gap-8">
+                  <span style="font-size:18px;">🥉</span>
+                  <span class="fw-600" style="font-size:13px;">Suresh R.</span>
+                </div>
+                <span style="font-size:13px;font-weight:700;color:var(--accent-amber);">3,410 pts</span>
+              </div>
+              <div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border-subtle);">
+                <div class="flex-center gap-8">
+                  <span style="font-size:14px;color:var(--text-muted);">&nbsp;4</span>
+                  <span style="font-size:13px;">Divya K.</span>
+                </div>
+                <span style="font-size:13px;color:var(--text-secondary);">2,890 pts</span>
+              </div>
+              <div class="flex-between" style="padding:8px 0;">
+                <div class="flex-center gap-8">
+                  <span style="font-size:14px;color:var(--text-muted);">&nbsp;5</span>
+                  <span style="font-size:13px;">Kiran P.</span>
+                </div>
+                <span style="font-size:13px;color:var(--text-secondary);">2,340 pts</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 3: Users table -->
+      <div class="block">
+        <div class="block-header">
+          <span class="block-title"><span class="dot indigo"></span> User Overview — Recent Registrations</span>
+          <span class="block-action">Full Directory →</span>
+        </div>
+        <div class="block-body" style="padding:0;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>User</th><th>Role</th><th>Status</th>
+                <th>Joined</th><th>Balance</th><th>Submissions</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="primary">Arjun Teja</td><td><span class="badge user">user</span></td>
+                <td><span class="badge active">active</span></td>
+                <td class="text-muted">Sep 4, 2026</td>
+                <td class="primary fw-600">4,820</td><td>312</td>
+                <td><button class="btn btn-ghost btn-sm">View</button></td>
+              </tr>
+              <tr>
+                <td class="primary">Meera Sharma</td><td><span class="badge user">user</span></td>
+                <td><span class="badge active">active</span></td>
+                <td class="text-muted">Sep 3, 2026</td>
+                <td class="primary fw-600">3,950</td><td>287</td>
+                <td><button class="btn btn-ghost btn-sm">View</button></td>
+              </tr>
+              <tr>
+                <td class="primary">Rohan Verma</td><td><span class="badge user">user</span></td>
+                <td><span class="badge suspended">suspended</span></td>
+                <td class="text-muted">Aug 30, 2026</td>
+                <td class="primary fw-600">—</td><td>145</td>
+                <td><button class="btn btn-success btn-sm">Unsuspend</button></td>
+              </tr>
+              <tr>
+                <td class="primary">Preethi N.</td><td><span class="badge user">user</span></td>
+                <td><span class="badge active">active</span></td>
+                <td class="text-muted">Aug 28, 2026</td>
+                <td class="primary fw-600">1,240</td><td>98</td>
+                <td><button class="btn btn-ghost btn-sm">View</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+Chart.defaults.color = '#9a9aaa';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+
+const days14 = ['08-23','08-24','08-25','08-26','08-27','08-28','08-29','08-30','08-31','09-01','09-02','09-03','09-04','09-05'];
+
+// Submissions
+new Chart(document.getElementById('submissionsChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: days14,
+    datasets: [
+      { label: 'Approved', data: [210,320,290,380,480,420,380,580,540,700,620,780,740,890], backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4 },
+      { label: 'Pending', data: [60,80,70,90,100,90,80,110,100,120,110,130,120,100], backgroundColor: 'rgba(251,191,36,0.7)', borderRadius: 4 },
+      { label: 'Rejected', data: [15,20,18,25,30,25,22,35,30,40,35,45,40,30], backgroundColor: 'rgba(251,113,133,0.7)', borderRadius: 4 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 12, usePointStyle: true } } },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { maxTicksLimit: 7, font: { size: 10 } } },
+      y: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// Points
+new Chart(document.getElementById('pointsChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: days14,
+    datasets: [
+      { label: 'Issued', data: [4200,6400,5800,7600,9600,8400,7600,11600,10800,14000,12400,15600,14800,17800], borderColor: '#7c7cff', backgroundColor: 'rgba(124,124,255,0.08)', fill: true, tension: 0.4, pointRadius: 3 },
+      { label: 'Spent', data: [1800,2600,2200,3100,4000,3500,3200,4800,4500,5800,5200,6500,6200,7400], borderColor: '#fbbf24', backgroundColor: 'rgba(251,191,36,0.05)', fill: true, tension: 0.4, pointRadius: 3 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 12, usePointStyle: true } } },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { maxTicksLimit: 7, font: { size: 10 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// Category donut
+new Chart(document.getElementById('categoryChart').getContext('2d'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Plastic','Glass','Paper','Metal','E-Waste'],
+    datasets: [{ data: [5200,2100,4300,1800,800], backgroundColor: ['#7c7cff','#22d3ee','#34d399','#fbbf24','#fb7185'], borderWidth: 0, hoverOffset: 4 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false } } }
+});
+
+document.querySelectorAll('.rail-item').forEach(el => {
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('.rail-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  });
+});
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

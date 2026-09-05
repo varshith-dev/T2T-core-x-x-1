@@ -17,6 +17,9 @@ const schema = z.object({
   // Optional bootstrap admin — created on first boot if no admin exists.
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_PASSWORD: z.string().min(8).optional(),
+  // Super admin — created/promoted on boot; can access everything + grant roles.
+  SUPER_ADMIN_EMAIL: z.string().email().optional(),
+  SUPER_ADMIN_PASSWORD: z.string().min(8).optional(),
 });
 
 export const env = schema.parse(process.env);

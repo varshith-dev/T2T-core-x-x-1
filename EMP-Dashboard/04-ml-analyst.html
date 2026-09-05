@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ML Analyst Dashboard — T2T Platform</title>
+<meta name="description" content="ML Analyst dashboard — model performance, confidence distribution, category accuracy, and waste gate metrics."/>
+<link rel="stylesheet" href="shared/styles.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.model-card{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:16px 20px;display:flex;align-items:center;gap:16px;transition:all var(--t-fast);}
+.model-card:hover{border-color:var(--border-default);}
+.model-badge{padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.model-badge.current{background:rgba(52,211,153,0.2);color:var(--success);border:1px solid rgba(52,211,153,0.3);}
+.model-badge.old{background:var(--bg-elevated);color:var(--text-muted);border:1px solid var(--border-subtle);}
+.conf-bucket{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-subtle);}
+.conf-bucket:last-child{border-bottom:none;}
+.bucket-range{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);width:60px;flex-shrink:0;}
+.bucket-bar{flex:1;height:6px;background:var(--bg-elevated);border-radius:4px;overflow:hidden;}
+.bucket-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+.bucket-count{font-size:11.5px;font-weight:600;color:var(--text-secondary);width:40px;text-align:right;}
+.mismatch-row td{font-size:12px;}
+.accuracy-ring{position:relative;display:flex;align-items:center;justify-content:center;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- RAIL -->
+  <nav class="rail" role="navigation" aria-label="ML Analyst Navigation">
+    <div class="rail-logo">
+      <div class="logo-mark">T2</div>
+      <div>
+        <div class="logo-text">T2T ML Studio</div>
+        <div class="logo-sub">Model Analytics</div>
+      </div>
+    </div>
+
+    <div class="rail-section">Performance</div>
+    <a class="rail-item active" href="#">
+      <span class="icon">🤖</span> Model Overview
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">📊</span> Confidence Analysis
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🎯</span> Accuracy Tracking
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🔄</span> Version History
+    </a>
+
+    <div class="rail-section">Categories</div>
+    <a class="rail-item" href="#">
+      <span class="icon">🗂</span> Category Metrics
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🔀</span> Confusion Matrix
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">📉</span> Error Analysis
+    </a>
+
+    <div class="rail-section">Pipeline</div>
+    <a class="rail-item" href="#">
+      <span class="icon">🚰</span> Waste Gate
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🔬</span> Mismatches
+      <span class="badge warn">23</span>
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🏷</span> Training Labels
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">🚀</span> Deploy Model
+    </a>
+
+    <div class="rail-section">Data</div>
+    <a class="rail-item" href="#">
+      <span class="icon">📤</span> Export Dataset
+    </a>
+    <a class="rail-item" href="#">
+      <span class="icon">📝</span> Annotation Queue
+    </a>
+
+    <div class="rail-footer">
+      <div class="rail-user">
+        <div class="avatar">DS</div>
+        <div>
+          <div class="user-name">Dr. Shira P.</div>
+          <div class="user-role">ML Analyst</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <span class="role-chip ml-analyst">🤖 ML Analyst</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-breadcrumb">
+          <span>T2T</span> / <span>ML Analyst</span> / <span style="color:var(--text-primary)">Model Overview</span>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span class="tag" style="font-family:'JetBrains Mono',monospace;font-size:11px;">Current: <strong style="color:var(--success)">v2.4.1</strong></span>
+        <button class="btn btn-ghost btn-sm">📋 Export Report</button>
+        <button class="btn btn-primary btn-sm">🚀 Deploy New Model</button>
+      </div>
+    </header>
+
+    <main class="page">
+      <div class="page-header">
+        <h1>ML Model Performance</h1>
+        <p>Confidence distributions, accuracy metrics, category performance and pipeline health.</p>
+        <div class="header-meta">
+          <span class="role-chip ml-analyst">🤖 ML Analyst</span>
+          <span class="text-sm text-muted">Model v2.4.1 · 18,734 predictions</span>
+        </div>
+      </div>
+
+      <!-- STAT GRID -->
+      <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);">
+        <div class="stat-card emerald">
+          <span class="stat-icon">🎯</span>
+          <div class="stat-value">91.2%</div>
+          <div class="stat-label">ML Accuracy</div>
+          <div class="stat-delta up">↑ 2.1pp vs v2.3</div>
+        </div>
+        <div class="stat-card violet">
+          <span class="stat-icon">⚡</span>
+          <div class="stat-value">87.4%</div>
+          <div class="stat-label">Auto-Approval Rate</div>
+          <div class="stat-delta up">↑ 1.8pp</div>
+        </div>
+        <div class="stat-card cyan">
+          <span class="stat-icon">📊</span>
+          <div class="stat-value">0.74</div>
+          <div class="stat-label">Avg Confidence</div>
+          <div class="stat-delta up">↑ 0.03</div>
+        </div>
+        <div class="stat-card amber">
+          <span class="stat-icon">🚰</span>
+          <div class="stat-value">98.2%</div>
+          <div class="stat-label">Waste Gate Acc.</div>
+          <div class="stat-delta up">stable</div>
+        </div>
+        <div class="stat-card rose">
+          <span class="stat-icon">🔀</span>
+          <div class="stat-value">23</div>
+          <div class="stat-label">Mismatches</div>
+          <div class="stat-delta down">↑ 4 new</div>
+        </div>
+        <div class="stat-card indigo">
+          <span class="stat-icon">📸</span>
+          <div class="stat-value">18.7k</div>
+          <div class="stat-label">Total Processed</div>
+          <div class="stat-delta up">↑ 840 today</div>
+        </div>
+      </div>
+
+      <!-- ROW 1 -->
+      <div class="content-grid wide-left" style="margin-bottom:16px;">
+
+        <!-- Confidence Distribution -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot"></span> Confidence Distribution (10 Buckets)</span>
+            <span class="block-action">Export Data →</span>
+          </div>
+          <div class="block-body">
+            <div class="chart-wrap" style="height:200px;"><canvas id="confChart"></canvas></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;">
+              <div style="background:var(--bg-elevated);border-radius:var(--radius-sm);padding:12px;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Low Confidence (&lt;0.5)</div>
+                <div style="font-size:20px;font-weight:800;color:var(--danger);">12.6%</div>
+                <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">→ sent to review queue</div>
+              </div>
+              <div style="background:var(--bg-elevated);border-radius:var(--radius-sm);padding:12px;">
+                <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">High Confidence (≥0.8)</div>
+                <div style="font-size:20px;font-weight:800;color:var(--success);">71.3%</div>
+                <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">→ auto-approved</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Model Versions + Accuracy -->
+        <div>
+          <div class="block" style="margin-bottom:16px;">
+            <div class="block-header">
+              <span class="block-title"><span class="dot emerald"></span> Overall Accuracy</span>
+            </div>
+            <div class="block-body">
+              <div class="accuracy-ring" style="height:160px;">
+                <canvas id="accuracyChart"></canvas>
+                <div class="donut-center">
+                  <span class="dc-val">91.2%</span>
+                  <span class="dc-label">Accuracy</span>
+                </div>
+              </div>
+              <div style="margin-top:12px;">
+                <div class="metric-row">
+                  <span class="metric-label">True Positives</span>
+                  <span class="metric-value" style="color:var(--success)">17,083</span>
+                </div>
+                <div class="metric-row">
+                  <span class="metric-label">Mismatches</span>
+                  <span class="metric-value" style="color:var(--danger)">1,651</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Model versions -->
+          <div class="block">
+            <div class="block-header">
+              <span class="block-title"><span class="dot amber"></span> Model Versions</span>
+            </div>
+            <div class="block-body" style="display:flex;flex-direction:column;gap:10px;">
+              <div class="model-card">
+                <span class="model-badge current">v2.4.1</span>
+                <div style="flex:1;">
+                  <div style="font-size:12.5px;font-weight:600;color:var(--text-primary);">Current Production</div>
+                  <div style="font-size:11px;color:var(--text-muted);">18,734 predictions · 91.2% acc</div>
+                </div>
+                <span class="badge active">Live</span>
+              </div>
+              <div class="model-card">
+                <span class="model-badge old">v2.3.0</span>
+                <div style="flex:1;">
+                  <div style="font-size:12.5px;font-weight:600;color:var(--text-secondary);">Previous</div>
+                  <div style="font-size:11px;color:var(--text-muted);">62,100 predictions · 89.1% acc</div>
+                </div>
+                <span class="badge neutral">Retired</span>
+              </div>
+              <div class="model-card">
+                <span class="model-badge old">v2.2.0</span>
+                <div style="flex:1;">
+                  <div style="font-size:12.5px;font-weight:600;color:var(--text-secondary);">Legacy</div>
+                  <div style="font-size:11px;color:var(--text-muted);">41,200 predictions · 85.4% acc</div>
+                </div>
+                <span class="badge neutral">Retired</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2 -->
+      <div class="content-grid" style="margin-bottom:16px;">
+
+        <!-- Per-Category Performance -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot cyan"></span> Per-Category Accuracy</span>
+          </div>
+          <div class="block-body">
+            <div class="chart-wrap" style="height:200px;"><canvas id="catAccChart"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Waste Gate -->
+        <div class="block">
+          <div class="block-header">
+            <span class="block-title"><span class="dot amber"></span> Waste Gate Statistics</span>
+          </div>
+          <div class="block-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+              <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+                <div style="font-size:28px;font-weight:800;color:var(--success);">15,812</div>
+                <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-top:4px;">Is Waste ✅</div>
+              </div>
+              <div style="background:rgba(251,113,133,0.08);border:1px solid rgba(251,113,133,0.2);border-radius:var(--radius-sm);padding:14px;text-align:center;">
+                <div style="font-size:28px;font-weight:800;color:var(--danger);">2,922</div>
+                <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-top:4px;">Not Waste ❌</div>
+              </div>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Gate Accuracy</span>
+              <span class="metric-value" style="color:var(--success)">98.2%</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">False Positives</span>
+              <span class="metric-value">284 (1.8%)</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">False Negatives</span>
+              <span class="metric-value">52 (0.3%)</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Avg Gate Score (pass)</span>
+              <span class="metric-value">0.87</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">Avg Gate Score (fail)</span>
+              <span class="metric-value" style="color:var(--danger)">0.23</span>
+            </div>
+            <div class="divider"></div>
+            <div class="chart-wrap" style="height:100px;"><canvas id="gateChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mismatches Table -->
+      <div class="block">
+        <div class="block-header">
+          <span class="block-title"><span class="dot rose"></span> Recent ML–Human Mismatches (Top 20)</span>
+          <span class="block-action">Export for Retraining →</span>
+        </div>
+        <div class="block-body" style="padding:0;">
+          <table class="data-table mismatch-row">
+            <thead>
+              <tr><th>Submission ID</th><th>ML Predicted</th><th>Human Label</th><th>Confidence</th><th>Model Ver.</th><th>Flag</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mono">#sub_7f3a</td><td class="primary">Plastic</td><td style="color:var(--accent-amber)">Paper</td>
+                <td><span style="color:var(--danger)">43%</span></td><td class="mono">v2.4.1</td>
+                <td><button class="btn btn-ghost btn-sm">Add to Train</button></td>
+              </tr>
+              <tr>
+                <td class="mono">#sub_1c8d</td><td class="primary">Metal</td><td style="color:var(--accent-amber)">E-Waste</td>
+                <td><span style="color:var(--warning)">51%</span></td><td class="mono">v2.4.1</td>
+                <td><button class="btn btn-ghost btn-sm">Add to Train</button></td>
+              </tr>
+              <tr>
+                <td class="mono">#sub_9a2b</td><td class="primary">Paper</td><td style="color:var(--accent-amber)">Cardboard</td>
+                <td><span style="color:var(--danger)">38%</span></td><td class="mono">v2.4.1</td>
+                <td><button class="btn btn-ghost btn-sm">Add to Train</button></td>
+              </tr>
+              <tr>
+                <td class="mono">#sub_4e7f</td><td class="primary">Glass</td><td style="color:var(--accent-amber)">Plastic</td>
+                <td><span style="color:var(--warning)">44%</span></td><td class="mono">v2.3.0</td>
+                <td><button class="btn btn-ghost btn-sm">Add to Train</button></td>
+              </tr>
+              <tr>
+                <td class="mono">#sub_8b1a</td><td class="primary">Metal</td><td style="color:var(--accent-amber)">Glass</td>
+                <td><span style="color:var(--danger)">29%</span></td><td class="mono">v2.4.1</td>
+                <td><button class="btn btn-ghost btn-sm">Add to Train</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+Chart.defaults.color = '#9a9aaa';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+
+// Confidence distribution bar
+new Chart(document.getElementById('confChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: ['0.0–0.1','0.1–0.2','0.2–0.3','0.3–0.4','0.4–0.5','0.5–0.6','0.6–0.7','0.7–0.8','0.8–0.9','0.9–1.0'],
+    datasets: [{
+      label: 'Predictions',
+      data: [120,340,580,820,1040,1320,2100,3480,5200,3734],
+      backgroundColor: ['#fb7185','#fb7185','#fb7185','#fbbf24','#fbbf24','#60a5fa','#60a5fa','#34d399','#34d399','#34d399'],
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// Accuracy donut
+new Chart(document.getElementById('accuracyChart').getContext('2d'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Correct','Mismatch'],
+    datasets: [{ data: [91.2, 8.8], backgroundColor: ['#34d399','rgba(255,255,255,0.06)'], borderWidth: 0 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { display: false } } }
+});
+
+// Per-category radar
+new Chart(document.getElementById('catAccChart').getContext('2d'), {
+  type: 'radar',
+  data: {
+    labels: ['Plastic','Glass','Paper','Metal','E-Waste','Organic'],
+    datasets: [
+      { label: 'v2.4.1 Accuracy', data: [93,88,94,90,84,87], borderColor: '#7c7cff', backgroundColor: 'rgba(124,124,255,0.1)', pointBackgroundColor: '#7c7cff' },
+      { label: 'v2.3.0 Accuracy', data: [90,85,91,88,80,83], borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.06)', pointBackgroundColor: '#22d3ee', borderDash: [4,4] },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 12, usePointStyle: true } } },
+    scales: { r: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { display: false }, pointLabels: { font: { size: 11 } } } }
+  }
+});
+
+// Waste Gate pie
+new Chart(document.getElementById('gateChart').getContext('2d'), {
+  type: 'bar',
+  data: {
+    labels: ['True Pos.','False Pos.','False Neg.','True Neg.'],
+    datasets: [{ data: [15812,284,52,2586], backgroundColor: ['#34d399','#fbbf24','#fb7185','#7c7cff'], borderRadius: 4 }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { grid: { display: false }, ticks: { font: { size: 9 } } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } }
+  }
+});
+
+document.querySelectorAll('.rail-item').forEach(el => {
+  el.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('.rail-item').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
