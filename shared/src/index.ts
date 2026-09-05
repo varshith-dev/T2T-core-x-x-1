@@ -93,5 +93,8 @@ export const mlResultSchema = z.object({
   category: z.enum(CATEGORIES),
   confidence: z.number().min(0).max(1),
   modelVersion: z.string(),
+  // Waste-gate: false = image isn't discarded waste (laptop/screen/person/…) -> never auto-approve.
+  isWaste: z.boolean().default(true),
+  wasteScore: z.number().min(0).max(1).optional(),
 });
 export type MlResult = z.infer<typeof mlResultSchema>;

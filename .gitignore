@@ -20,3 +20,6 @@ build/
 .uploads/
 # keys / secrets
 *.pem
+# deploy artifacts
+deploy/.state
+deploy/*.tar.gz

@@ -30,8 +30,8 @@ async function processOne(): Promise<boolean> {
   if (!sub) return false;
 
   const ml = await classifyImage(sub.imageKey);
-  // ML down or unsure -> human review
-  if (!ml || ml.confidence < env.ML_CONFIDENCE_THRESHOLD) {
+  // ML down, unsure, OR not actually waste (gate) -> human review, never auto-approve
+  if (!ml || ml.confidence < env.ML_CONFIDENCE_THRESHOLD || !ml.isWaste) {
     await toReview(sub.id, ml);
     return true;
   }
