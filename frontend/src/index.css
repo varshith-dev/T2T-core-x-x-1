@@ -73,3 +73,33 @@ body {
   color: hsl(var(--foreground));
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
+
+@keyframes pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-pop { animation: pop 0.5s ease-out; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-rise { animation: rise 0.35s ease-out; }
+
+@keyframes grow {
+  from { width: 0; }
+}
+.animate-grow { animation: grow 0.8s ease-out; }
+
+/* scanning shimmer while the model classifies */
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(400%); }
+}
+.scanline {
+  position: absolute;
+  left: 0; right: 0; height: 25%;
+  background: linear-gradient(180deg, transparent, hsl(var(--primary) / 0.35), transparent);
+  animation: scan 1.4s ease-in-out infinite;
+}

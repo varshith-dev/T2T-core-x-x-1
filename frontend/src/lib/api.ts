@@ -78,12 +78,16 @@ export const api = {
   me: () => req<{ user: User | null }>("/auth/me"),
 
   // user
-  uploadSubmission: (file: File, meta?: { lat?: number; lng?: number; capturedAt?: string }) => {
+  uploadSubmission: (
+    file: File,
+    meta?: { lat?: number; lng?: number; capturedAt?: string; source?: "camera" | "gallery" },
+  ) => {
     const fd = new FormData();
     fd.append("file", file);
     if (meta?.lat != null) fd.append("lat", String(meta.lat));
     if (meta?.lng != null) fd.append("lng", String(meta.lng));
     if (meta?.capturedAt) fd.append("capturedAt", meta.capturedAt);
+    if (meta?.source) fd.append("source", meta.source);
     return req<{ submission: Submission }>("/submissions", { form: fd });
   },
   mySubmissions: () => req<{ submissions: Submission[] }>("/submissions"),
