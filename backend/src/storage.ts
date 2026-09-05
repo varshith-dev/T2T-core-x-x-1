@@ -2,23 +2,16 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { AwsClient } from "aws4fetch";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const localDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", ".uploads");
 
-// R2 is used when all creds are present; otherwise everything falls back to local disk.
-const R2 = {
-  account: process.env.R2_ACCOUNT_ID,
-  key: process.env.R2_ACCESS_KEY_ID,
-  secret: process.env.R2_SECRET_ACCESS_KEY,
-  bucket: process.env.R2_BUCKET,
-  publicBase: process.env.R2_PUBLIC_BASE_URL,
-};
-const r2Enabled = !!(R2.account && R2.key && R2.secret && R2.bucket);
-const client = r2Enabled ? new AwsClient({ accessKeyId: R2.key!, secretAccessKey: R2.secret! }) : null;
-const endpoint = r2Enabled
-  ? `https://${R2.account}.r2.cloudflarestorage.com/${R2.bucket}`
-  : "";
+// S3 is used when S3_BUCKET is set; credentials come from the EC2 instance role
+// (default provider chain) — no keys stored anywhere. Otherwise: local disk.
+const BUCKET = process.env.S3_BUCKET;
+const REGION = process.env.AWS_REGION ?? "ap-south-1";
+const s3 = BUCKET ? new S3Client({ region: REGION }) : null;
 
 const CONTENT_TYPES: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -28,7 +21,7 @@ const CONTENT_TYPES: Record<string, string> = {
   ".gif": "image/gif",
 };
 
-export const isR2 = () => r2Enabled;
+export const isCloud = () => !!s3;
 export const localPathFor = (key: string) => path.join(localDir, key);
 
 export type StoredImage = { key: string };
@@ -36,13 +29,15 @@ export type StoredImage = { key: string };
 export async function putImage(buf: Buffer, ext: string): Promise<StoredImage> {
   const e = ext.startsWith(".") ? ext : "." + ext;
   const key = `${randomUUID()}${e}`;
-  if (client) {
-    const res = await client.fetch(`${endpoint}/${key}`, {
-      method: "PUT",
-      body: new Uint8Array(buf),
-      headers: { "content-type": CONTENT_TYPES[e.toLowerCase()] ?? "application/octet-stream" },
-    });
-    if (!res.ok) throw new Error(`R2 upload failed: ${res.status}`);
+  if (s3) {
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+        Body: buf,
+        ContentType: CONTENT_TYPES[e.toLowerCase()] ?? "application/octet-stream",
+      }),
+    );
   } else {
     await mkdir(localDir, { recursive: true });
     await writeFile(localPathFor(key), buf);
@@ -50,24 +45,17 @@ export async function putImage(buf: Buffer, ext: string): Promise<StoredImage> {
   return { key };
 }
 
-// Raw bytes (used by the ML worker to classify). Works for both backends.
+// Raw bytes (used by the ML worker to classify). Works for S3 or local.
 export async function getBytes(key: string): Promise<Buffer> {
-  if (client) {
-    const res = await client.fetch(`${endpoint}/${key}`);
-    if (!res.ok) throw new Error(`R2 get failed: ${res.status}`);
-    return Buffer.from(await res.arrayBuffer());
+  if (s3) {
+    const r = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    return Buffer.from(await r.Body!.transformToByteArray());
   }
   return readFile(localPathFor(key));
 }
 
-// Absolute URL for R2-hosted images (public base or presigned); null when local
-// (the /images/:key route streams local files instead).
+// Short-lived signed URL for S3-hosted images; null when local (route streams the file).
 export async function imageUrl(key: string): Promise<string | null> {
-  if (!client) return null;
-  if (R2.publicBase) return `${R2.publicBase.replace(/\/$/, "")}/${key}`;
-  const signed = await client.sign(`${endpoint}/${key}?X-Amz-Expires=3600`, {
-    method: "GET",
-    aws: { signQuery: true },
-  });
-  return signed.url;
+  if (!s3) return null;
+  return getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET, Key: key }), { expiresIn: 3600 });
 }
