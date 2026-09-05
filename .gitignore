@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+# python
+__pycache__/
+*.pyc
+.venv/
+build/
+*.spec
+# models / data
+*.onnx
+*.pt
+*.pth
+# local runtime data (never commit)
+.pgdata/
+.uploads/
+# keys / secrets
+*.pem

@@ -1,0 +1,14 @@
+{
+  "name": "t2t",
+  "private": true,
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:db": "pnpm --filter @t2t/backend db:dev",
+    "dev:api": "pnpm --filter @t2t/backend dev",
+    "db:generate": "pnpm --filter @t2t/backend db:generate",
+    "db:migrate": "pnpm --filter @t2t/backend db:migrate"
+  }
+}

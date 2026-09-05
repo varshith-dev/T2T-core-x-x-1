@@ -1,0 +1,8 @@
+packages:
+  - backend
+  - frontend
+  - shared
+allowBuilds:
+  "@embedded-postgres/windows-x64": true
+  argon2: true
+  esbuild: true
