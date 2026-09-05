@@ -96,5 +96,6 @@ export const mlResultSchema = z.object({
   // Waste-gate: false = image isn't discarded waste (laptop/screen/person/…) -> never auto-approve.
   isWaste: z.boolean().default(true),
   wasteScore: z.number().min(0).max(1).optional(),
+  productName: z.string().nullable().optional(), // specific item name, e.g. "plastic water bottle"
 });
 export type MlResult = z.infer<typeof mlResultSchema>;

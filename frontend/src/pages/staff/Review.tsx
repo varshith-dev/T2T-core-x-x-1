@@ -41,7 +41,7 @@ export default function Review() {
       <h2 className="flex items-center gap-2 text-lg font-semibold">
         Review queue <Badge variant="secondary">{queue.length}</Badge>
       </h2>
-      {queue.length === 0 && <p className="text-sm text-muted-foreground">Nothing to review 🎉</p>}
+      {queue.length === 0 && <p className="text-sm text-muted-foreground">Nothing to review.</p>}
       <div className="grid gap-4 sm:grid-cols-2">
         {queue.map((s) => (
           <Card key={s.id}>

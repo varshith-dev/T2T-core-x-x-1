@@ -45,6 +45,19 @@ NOT_WASTE_PROMPTS = [
 ]
 GATE_LABELS = WASTE_PROMPTS + NOT_WASTE_PROMPTS
 
+# Specific item names (CLIP zero-shot) so we can name the product, not just the category.
+ITEM_PROMPTS = [
+    "a plastic water bottle", "a plastic bag", "a plastic food container", "a plastic cup",
+    "an aluminum drink can", "a metal can", "a metal object",
+    "a cardboard box", "a sheet of paper", "a newspaper",
+    "a glass bottle", "a glass jar",
+    "food scraps or peels", "a fruit or vegetable",
+    "a battery", "an electronic device", "a charger or cable",
+    "a piece of clothing", "a shoe",
+    "general mixed trash",
+]
+ITEM_NAME = {p: p[2:] if p.startswith("a ") else p[3:] if p.startswith("an ") else p for p in ITEM_PROMPTS}
+
 
 def normalize(label: str) -> str:
     return str(label).strip().lower().replace("_", "-").replace(" ", "-")
@@ -97,10 +110,17 @@ async def classify(file: UploadFile = File(...)):
         scores[cat] = scores.get(cat, 0.0) + float(p["score"])
     best = max(scores, key=lambda k: scores[k]) if scores else "trash"
 
+    # Stage 3: name the specific item (only meaningful when it's waste)
+    product_name = None
+    if is_waste:
+        items = gate(img, candidate_labels=ITEM_PROMPTS)
+        product_name = ITEM_NAME.get(items[0]["label"], items[0]["label"])
+
     return {
         "category": best,
         "confidence": round(min(scores.get(best, 0.0), 1.0), 4),
         "modelVersion": MODEL_ID,
         "isWaste": is_waste,
         "wasteScore": round(waste_share, 4),
+        "productName": product_name,
     }

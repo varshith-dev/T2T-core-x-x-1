@@ -8,7 +8,10 @@ import { classifyImage } from "./ml.js";
 // worker instances later, claim rows with `.for("update", { skipLocked: true })`.
 let running = false;
 
-async function toReview(id: string, ml: { category?: string; confidence?: number; modelVersion?: string } | null) {
+async function toReview(
+  id: string,
+  ml: { category?: string; confidence?: number; modelVersion?: string; productName?: string | null } | null,
+) {
   await db
     .update(schema.submissions)
     .set({
@@ -16,6 +19,7 @@ async function toReview(id: string, ml: { category?: string; confidence?: number
       mlCategory: ml?.category as any,
       mlConfidence: ml?.confidence,
       mlModelVersion: ml?.modelVersion,
+      productName: ml?.productName ?? null,
     })
     .where(eq(schema.submissions.id, id));
 }
@@ -76,6 +80,7 @@ async function processOne(): Promise<boolean> {
       mlCategory: ml.category,
       mlConfidence: ml.confidence,
       mlModelVersion: ml.modelVersion,
+      productName: ml.productName ?? null,
       awardedPoints: rule.points,
     })
     .where(eq(schema.submissions.id, sub.id));

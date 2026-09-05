@@ -65,6 +65,7 @@ export const submissions = pgTable(
     mlCategory: categoryEnum("ml_category"),
     mlConfidence: doublePrecision("ml_confidence"),
     mlModelVersion: text("ml_model_version"),
+    productName: text("product_name"), // specific item name from the model
     awardedPoints: integer("awarded_points"),
     reviewedBy: uuid("reviewed_by").references(() => users.id),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),

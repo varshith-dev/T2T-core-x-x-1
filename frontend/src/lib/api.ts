@@ -46,8 +46,12 @@ export type Submission = {
   mlCategory: Category | null;
   mlConfidence: number | null;
   mlModelVersion: string | null;
+  productName: string | null;
   awardedPoints: number | null;
   imageKey: string;
+  lat: number | null;
+  lng: number | null;
+  capturedAt: string | null;
   createdAt: string;
 };
 export type LedgerEntry = { id: string; delta: number; reason: string; createdAt: string };

@@ -1,11 +1,25 @@
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Camera, Upload, Coins, Sparkles, Check } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import {
+  Camera,
+  Upload,
+  Coins,
+  Sparkles,
+  Check,
+  CheckCircle2,
+  Eye,
+  XCircle,
+  MapPin,
+  Clock,
+  X,
+} from "lucide-react";
 import { CATEGORY_LABEL } from "@t2t/shared";
 import { api, type Submission, ApiError } from "@/lib/api";
 import { CATEGORY_META } from "@/lib/categories";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Modal } from "@/components/ui/modal";
 import { CameraCapture } from "@/components/CameraCapture";
 
 type Phase = "idle" | "uploading" | "processing" | "result";
@@ -17,6 +31,8 @@ const STATUS = {
   rejected: ["destructive", "Rejected"],
 } as const;
 
+const fmt = (d: string | null) => (d ? new Date(d).toLocaleString() : "—");
+
 export default function Home() {
   const [balance, setBalance] = useState(0);
   const [subs, setSubs] = useState<Submission[]>([]);
@@ -24,6 +40,7 @@ export default function Home() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<Submission | null>(null);
+  const [selected, setSelected] = useState<Submission | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -88,7 +105,6 @@ export default function Home() {
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  // ---- camera ----
   if (view === "camera") {
     return (
       <Card className="mx-auto max-w-sm">
@@ -110,7 +126,6 @@ export default function Home() {
     );
   }
 
-  // ---- processing ----
   if (phase === "uploading" || phase === "processing") {
     return (
       <Card className="mx-auto max-w-sm animate-rise">
@@ -131,12 +146,10 @@ export default function Home() {
     );
   }
 
-  // ---- result ----
   if (phase === "result" && result) {
     return <ResultCard result={result} onDone={reset} />;
   }
 
-  // ---- idle ----
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -180,31 +193,112 @@ export default function Home() {
             const meta = s.mlCategory ? CATEGORY_META[s.mlCategory] : null;
             const [variant, label] = STATUS[s.status];
             return (
-              <div key={s.id} className="flex items-center gap-3 rounded-md border p-2">
+              <button
+                key={s.id}
+                onClick={() => setSelected(s)}
+                className="flex w-full items-center gap-3 rounded-md border p-2 text-left transition-colors hover:bg-secondary"
+              >
                 <img
                   src={`/api/images/${s.imageKey}`}
                   alt=""
                   className="h-12 w-12 rounded bg-secondary object-cover"
                 />
-                <div className="flex-1 text-sm">
-                  <div className="flex items-center gap-1">
-                    {meta && <span>{meta.emoji}</span>}
-                    <span>{s.mlCategory ? CATEGORY_LABEL[s.mlCategory] : "—"}</span>
+                <div className="min-w-0 flex-1 text-sm">
+                  <div className="flex items-center gap-1.5">
+                    {meta && <span className={cn("h-2 w-2 shrink-0 rounded-full", meta.dot)} />}
+                    <span className="truncate capitalize">
+                      {s.productName ?? (s.mlCategory ? CATEGORY_LABEL[s.mlCategory] : "—")}
+                    </span>
                     {s.awardedPoints != null && (
                       <span className="font-medium text-primary">+{s.awardedPoints}</span>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(s.createdAt).toLocaleString()}
-                  </div>
+                  <div className="text-xs text-muted-foreground">{fmt(s.createdAt)}</div>
                 </div>
                 <Badge variant={variant}>{label}</Badge>
-              </div>
+              </button>
             );
           })}
         </CardContent>
       </Card>
+
+      {selected && <DetailModal sub={selected} onClose={() => setSelected(null)} />}
     </div>
+  );
+}
+
+function Row({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 py-2">
+      <span className="mt-0.5 text-muted-foreground">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="text-sm">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function DetailModal({ sub, onClose }: { sub: Submission; onClose: () => void }) {
+  const meta = sub.mlCategory ? CATEGORY_META[sub.mlCategory] : null;
+  const conf = sub.mlConfidence != null ? Math.round(sub.mlConfidence * 100) : null;
+  const [variant, statusLabel] = STATUS[sub.status];
+  return (
+    <Modal onClose={onClose}>
+      <div className="relative">
+        <img
+          src={`/api/images/${sub.imageKey}`}
+          alt=""
+          className="aspect-square w-full rounded-t-2xl bg-secondary object-cover"
+        />
+        <button
+          onClick={onClose}
+          className="absolute right-2 top-2 rounded-full bg-black/50 p-1.5 text-white"
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <div className="space-y-1 p-5">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold capitalize">{sub.productName ?? "Unidentified item"}</h2>
+          <Badge variant={variant}>{statusLabel}</Badge>
+        </div>
+        {sub.mlCategory && meta && (
+          <Badge className={meta.chip}>{CATEGORY_LABEL[sub.mlCategory]}</Badge>
+        )}
+        <div className="mt-2 divide-y">
+          <Row
+            icon={<Coins size={16} />}
+            label="Eco-points"
+            value={sub.awardedPoints != null ? `+${sub.awardedPoints}` : "—"}
+          />
+          <Row
+            icon={<Sparkles size={16} />}
+            label="Model confidence"
+            value={conf != null ? `${conf}%` : "—"}
+          />
+          <Row icon={<Clock size={16} />} label="Captured" value={fmt(sub.capturedAt ?? sub.createdAt)} />
+          <Row
+            icon={<MapPin size={16} />}
+            label="Location"
+            value={
+              sub.lat != null && sub.lng != null ? (
+                <a
+                  className="text-primary underline"
+                  href={`https://www.google.com/maps?q=${sub.lat},${sub.lng}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {sub.lat.toFixed(5)}, {sub.lng.toFixed(5)}
+                </a>
+              ) : (
+                "Not shared"
+              )
+            }
+          />
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -219,15 +313,24 @@ function ResultCard({ result, onDone }: { result: Submission; onDone: () => void
     <Card className="mx-auto max-w-sm animate-rise overflow-hidden">
       <div className={approved ? "bg-primary/10" : review ? "bg-amber-500/10" : "bg-destructive/10"}>
         <CardContent className="space-y-3 p-6 text-center">
-          <div className="animate-pop text-5xl">{approved ? "🎉" : review ? "👀" : "🚫"}</div>
+          <div className="animate-pop">
+            {approved ? (
+              <CheckCircle2 className="mx-auto text-primary" size={56} />
+            ) : review ? (
+              <Eye className="mx-auto text-amber-500" size={56} />
+            ) : (
+              <XCircle className="mx-auto text-destructive" size={56} />
+            )}
+          </div>
           <div className="text-lg font-semibold">
             {approved ? "Approved!" : review ? "Sent for review" : "Not accepted"}
           </div>
+          {result.productName && (
+            <div className="text-sm capitalize text-muted-foreground">{result.productName}</div>
+          )}
           {meta && cat && (
             <div className="flex justify-center">
-              <Badge className={meta.chip}>
-                {meta.emoji} {CATEGORY_LABEL[cat]}
-              </Badge>
+              <Badge className={meta.chip}>{CATEGORY_LABEL[cat]}</Badge>
             </div>
           )}
           {conf != null && (
@@ -238,7 +341,7 @@ function ResultCard({ result, onDone }: { result: Submission; onDone: () => void
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-secondary">
                 <div
-                  className={`h-full ${meta?.bar ?? "bg-primary"} animate-grow`}
+                  className={cn("h-full animate-grow", meta?.bar ?? "bg-primary")}
                   style={{ width: `${conf}%` }}
                 />
               </div>

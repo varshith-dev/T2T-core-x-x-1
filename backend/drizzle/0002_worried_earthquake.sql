@@ -1,0 +1,1 @@
+ALTER TABLE "submissions" ADD COLUMN "product_name" text;
