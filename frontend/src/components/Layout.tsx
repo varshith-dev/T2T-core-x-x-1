@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { Leaf, LogOut } from "lucide-react";
+import { Leaf, LogOut } from "@/lib/icons";
 import type { Role } from "@t2t/shared";
 import { useAuth } from "@/auth";
 import { Button } from "@/components/ui/button";

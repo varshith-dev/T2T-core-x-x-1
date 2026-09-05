@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Camera, RefreshCw, Check, X } from "lucide-react";
+import { Camera, RefreshCw, Check, X } from "@/lib/icons";
 import { Button } from "@/components/ui/button";
 
 export function CameraCapture({

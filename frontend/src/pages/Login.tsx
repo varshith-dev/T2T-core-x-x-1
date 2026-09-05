@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Navigate } from "react-router-dom";
-import { Leaf } from "lucide-react";
+import { Leaf } from "@/lib/icons";
 import { useAuth } from "@/auth";
 import { ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Coins } from "lucide-react";
+import { Coins } from "@/lib/icons";
 import { api, type LedgerEntry } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 

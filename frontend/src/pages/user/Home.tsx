@@ -11,7 +11,7 @@ import {
   MapPin,
   Clock,
   X,
-} from "lucide-react";
+} from "@/lib/icons";
 import { CATEGORY_LABEL } from "@t2t/shared";
 import { api, type Submission, ApiError } from "@/lib/api";
 import { CATEGORY_META } from "@/lib/categories";
@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/modal";
 import { CameraCapture } from "@/components/CameraCapture";
+import { ScanOverlay } from "@/components/ScanOverlay";
 
 type Phase = "idle" | "uploading" | "processing" | "result";
 
@@ -132,7 +133,7 @@ export default function Home() {
         <CardContent className="space-y-4 p-6">
           <div className="relative mx-auto aspect-[3/4] max-w-[16rem] overflow-hidden rounded-xl bg-secondary">
             {preview && <img src={preview} alt="" className="h-full w-full object-cover" />}
-            <div className="scanline" />
+            <ScanOverlay />
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 font-medium">
@@ -178,6 +179,9 @@ export default function Home() {
             <Button variant="outline" className="w-full" onClick={() => fileRef.current?.click()}>
               <Upload size={16} /> Upload from gallery
             </Button>
+            <p className="rounded-md bg-secondary px-2 py-1.5 text-xs text-muted-foreground">
+              Tip: frame the <b>item</b> up close (not the whole bin) for the best match.
+            </p>
             {err && <p className="text-sm text-destructive">{err}</p>}
           </CardContent>
         </Card>

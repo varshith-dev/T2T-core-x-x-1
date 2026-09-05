@@ -19,7 +19,7 @@ from transformers import pipeline
 
 MODEL_ID = os.environ.get("MODEL_ID", "watersplash/waste-classification")
 GATE_MODEL = os.environ.get("GATE_MODEL", "openai/clip-vit-base-patch32")
-GATE_MIN = float(os.environ.get("GATE_MIN_SCORE", "0.35"))  # waste share must exceed this
+GATE_MIN = float(os.environ.get("GATE_MIN_SCORE", "0.28"))  # waste share must exceed this
 
 CATEGORIES = {"organic", "plastic", "paper", "cardboard", "metal", "glass", "ewaste", "trash"}
 LABEL_MAP = {
@@ -35,6 +35,9 @@ WASTE_PROMPTS = [
     "a piece of trash or garbage",
     "discarded waste such as a plastic bottle, wrapper, can, paper, glass, or food scraps",
     "litter or rubbish to be thrown in a bin",
+    "trash or garbage inside a dustbin or waste bin",
+    "someone throwing waste into a trash can",
+    "garbage or litter lying on the ground",
 ]
 NOT_WASTE_PROMPTS = [
     "a laptop, computer, or keyboard",
